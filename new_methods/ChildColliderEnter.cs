@@ -5,6 +5,8 @@ using UnityEngine;
 public class ChildColliderEnter : MonoBehaviour
 {
     public bool touchFlag1 = false;
+    bool touchFlag2;
+    public Child2ColliderEnter c2;
     handRSP script;
     GameObject text;  
     int count = 0;
@@ -12,6 +14,7 @@ public class ChildColliderEnter : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        touchFlag2 = c2.touchFlag2;
         text = GameObject.Find("Cube");
         script = text.GetComponent<handRSP>();
     }
@@ -19,7 +22,7 @@ public class ChildColliderEnter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-      if(touchFlag1){
+      if(touchFlag1 && touchFlag2){
         GameObject.Find("Cube").transform.position　= transform.position;
         //GameObject.Find("Cube").GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeRotation;
       }
@@ -35,7 +38,6 @@ public class ChildColliderEnter : MonoBehaviour
 	void OnCollisionExit(Collision collision)
 	{
         touchFlag1 = false;
-		//Debug.Log("321");
 	}
 
 }

@@ -27,7 +27,6 @@ public class Child2ColliderEnter : MonoBehaviour
 	void OnCollisionExit(Collision collision)
 	{
         touchFlag2 = false;
-		//Debug.Log("321");
 	}
 
 }
