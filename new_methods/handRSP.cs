@@ -42,6 +42,11 @@ public class handRSP : MonoBehaviour {
     Vector3[] vertices2;
     MeshFilter mf2;
 
+    GameObject thumb;
+    Vector3 last_vt;
+
+    
+
     // 回転用パラメータ
     private static float speed = 0.01f;
     private static float magnification = 1.0f;
@@ -69,9 +74,8 @@ public class handRSP : MonoBehaviour {
         goal2 = GameObject.Find("goal");
         mf = GetComponent<MeshFilter>();
         mf2 = goal2.GetComponent<MeshFilter>();
-
-        
-
+        thumb = GameObject.FindGameObjectWithTag("Player");
+        //Debug.Log(hand5.transform.position);
     }
 
     // Update is called once per frame
@@ -84,9 +88,9 @@ public class handRSP : MonoBehaviour {
         }else{
              rigidbody.constraints = RigidbodyConstraints.None;
              flag3 = false;
-             //Debug.Log("qwe");
         }
 
+        thumb = GameObject.FindGameObjectWithTag("Player");
         mesh = mf.mesh;
         vertices = mesh.vertices;
 
@@ -160,6 +164,7 @@ public class handRSP : MonoBehaviour {
                 {      
                     lastLeftHand_temp = this.transform.TransformPoint(ToVector3(leftHand.PalmPosition));
                     lastLeftHand = this.transform.TransformPoint(lastLeftHand_temp);
+                    last_vt = thumb.transform.position - this.transform.position;
 
                     if(ToVector3(leftHand.PalmVelocity).magnitude > speed){
                         speedFlag = true;
@@ -183,16 +188,59 @@ public class handRSP : MonoBehaviour {
                     Vector3 v_c = (nowLeftHand - this.transform.position).normalized;
                     Vector3 v_c2 = (lastLeftHand - this.transform.position).normalized;
                     Quaternion q_r = Quaternion.FromToRotation(v_c, v_c2);
-                    this.transform.rotation = Quaternion.Slerp(this.transform.rotation, this.transform.rotation*q_r, magnification);
+                    //this.transform.rotation = Quaternion.Slerp(this.transform.rotation, this.transform.rotation*q_r, magnification);
+                    Quaternion q_f = Quaternion.Slerp(this.transform.rotation, this.transform.rotation*q_r, magnification);
+                    
+                    // quaternion→回転変換行列
+                    Matrix4x4 Ma = Matrix4x4.identity;
+                    Ma[0]= q_f.x*q_f.x - q_f.y*q_f.y - q_f.z*q_f.z + q_f.w*q_f.w;
+                    Ma[1]= 2*(q_f.x*q_f.y + q_f.z*q_f.w);
+                    Ma[2]= 2*(q_f.x*q_f.z - q_f.y*q_f.w);
+                    Ma[3] = 0;
+                    Ma[4]= 2*(q_f.x*q_f.y - q_f.z*q_f.w);
+                    Ma[5]= -q_f.x*q_f.x + q_f.y*q_f.y - q_f.z*q_f.z + q_f.w*q_f.w;
+                    Ma[6]= 2*(q_f.y*q_f.z + q_f.x*q_f.w);
+                    Ma[7] = 0;
+                    Ma[8]= 2*(q_f.x*q_f.z + q_f.y*q_f.w);
+                    Ma[9]= 2*(q_f.y*q_f.z - q_f.x*q_f.w);
+                    Ma[10]= -q_f.x*q_f.x - q_f.y*q_f.y + q_f.z*q_f.z + q_f.w*q_f.w;
+                    Ma[11] = 0;
+                    Ma[12] = 0;
+                    Ma[13] = 0;
+                    Ma[14] = 0;
+                    Ma[15] = 1;
+
+                    // 仮想物体から親指の先へのベクトル
+                    Vector3 now_vt = thumb.transform.position - this.transform.position;
+                    Vector3 v_c3 = now_vt - last_vt;
+                    last_vt = now_vt;
+
+                    // 変位を表す変換行列
+                    Matrix4x4 Mt = Matrix4x4.identity;
+                    Mt[5] = v_c3.y;
+                    Mt[10] = v_c3.y;
+
+                    // 仮想物体の状態を表す変換行列？
+                    Matrix4x4 Mv = Matrix4x4.identity;
+                    Mv[0] = this.transform.position.x;
+                    Mv[5] = this.transform.position.y;
+                    Mv[10] = this.transform.position.z;
+
+                    // 回転
+                    Matrix4x4 Mo= Mv*Mt*Ma*Mt.inverse*Mv.inverse;
+
+                    // 回転行列からquaternion 
+                    float a1 = (float)System.Math.Sqrt(Mo[0]-Mo[5]-Mo[10]+1)/2.0f;
+                    float a2 = (float)System.Math.Sqrt(-Mo[0]+Mo[5]-Mo[10]+1)/2.0f;
+                    float a3 = (float)System.Math.Sqrt(-Mo[0]-Mo[5]+Mo[10]+1)/2.0f;
+                    float a4 = (float)System.Math.Sqrt(Mo[0]+Mo[5]+Mo[10]+1)/2.0f;
+                    Quaternion q_f2= new Quaternion(a1, a2, a3, a4);
+                    this.transform.rotation =q_f2;
 
                     if(ToVector3(leftHand.PalmVelocity).magnitude <= speed){
                         speedFlag = false;
                     }
                 }
-
-                
-                //Debug.Log(v_th);
-
             }
             else
             {
